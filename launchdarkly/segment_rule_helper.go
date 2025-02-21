@@ -18,6 +18,11 @@ func segmentRulesSchema(options segmentRulesSchemaOptions) *schema.Schema {
 		Description: "List of nested custom rule blocks to apply to the segment. This attribute is not valid when `unbounded` is set to `true`.",
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{
+				DESCRIPTION: {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Description: "A human-readable description of the segment rule.",
+				},
 				CLAUSES: clauseSchema(),
 				WEIGHT: {
 					Type:             schema.TypeInt,
@@ -69,6 +74,11 @@ func segmentRuleFromResourceData(val interface{}) (ldapi.UserSegmentRule, error)
 
 	r := ldapi.NewUserSegmentRule(clauses)
 
+	description := ruleMap[DESCRIPTION].(string)
+	if description != "" {
+		r.SetDescription(description)
+	}
+
 	bucketBy := ruleMap[BUCKET_BY].(string)
 	if bucketBy != "" {
 		r.SetBucketBy(bucketBy)
@@ -97,12 +107,18 @@ func segmentRulesToResourceData(rules []ldapi.UserSegmentRule) (interface{}, err
 		if err != nil {
 			return nil, err
 		}
-		transformed[i] = map[string]interface{}{
+		ruleMap := map[string]interface{}{
 			CLAUSES:              clauses,
 			WEIGHT:               r.Weight,
 			BUCKET_BY:            r.BucketBy,
 			ROLLOUT_CONTEXT_KIND: r.RolloutContextKind,
 		}
+
+		if r.Description != nil {
+			ruleMap[DESCRIPTION] = *r.Description
+		}
+
+		transformed[i] = ruleMap
 	}
 
 	return transformed, nil

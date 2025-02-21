@@ -18,9 +18,10 @@ func TestSegmentRuleFromResourceData(t *testing.T) {
 			// https://github.com/launchdarkly/terraform-provider-launchdarkly/issues/79
 			name: "Zero case should not create a UserSegmentRule with 0 weight",
 			input: map[string]interface{}{
-				WEIGHT:    0,
-				BUCKET_BY: "",
-				CLAUSES:   []interface{}{},
+				DESCRIPTION: "",
+				WEIGHT:      0,
+				BUCKET_BY:   "",
+				CLAUSES:     []interface{}{},
 			},
 			expected: ldapi.UserSegmentRule{
 				Clauses: []ldapi.Clause{},
@@ -29,8 +30,9 @@ func TestSegmentRuleFromResourceData(t *testing.T) {
 		{
 			name: "Clauses only - most typical case",
 			input: map[string]interface{}{
-				WEIGHT:    0,
-				BUCKET_BY: "",
+				DESCRIPTION: "",
+				WEIGHT:      0,
+				BUCKET_BY:   "",
 				CLAUSES: []interface{}{
 					map[string]interface{}{
 						ATTRIBUTE:  "country",
@@ -42,6 +44,74 @@ func TestSegmentRuleFromResourceData(t *testing.T) {
 				},
 			},
 			expected: ldapi.UserSegmentRule{
+				Clauses: []ldapi.Clause{
+					{
+						Attribute: "country",
+						Op:        "in",
+						Negate:    false,
+						Values:    []interface{}{"us", "gb"},
+					},
+				},
+			},
+		},
+		{
+			name: "with description",
+			input: map[string]interface{}{
+				DESCRIPTION: "rule description",
+				WEIGHT:      0,
+				BUCKET_BY:   "",
+				CLAUSES: []interface{}{
+					map[string]interface{}{
+						ATTRIBUTE:  "country",
+						OP:         "in",
+						NEGATE:     false,
+						VALUES:     []interface{}{"us", "gb"},
+						VALUE_TYPE: "string",
+					},
+				},
+			},
+			expected: ldapi.UserSegmentRule{
+				Description: strPtr("rule description"),
+				Clauses: []ldapi.Clause{
+					{
+						Attribute: "country",
+						Op:        "in",
+						Negate:    false,
+						Values:    []interface{}{"us", "gb"},
+					},
+				},
+			},
+		},
+		{
+			name: "with empty description",
+			input: map[string]interface{}{
+				DESCRIPTION: "",
+				WEIGHT:      0,
+				BUCKET_BY:   "",
+				CLAUSES:     []interface{}{},
+			},
+			expected: ldapi.UserSegmentRule{
+				Clauses: []ldapi.Clause{},
+			},
+		},
+		{
+			name: "with description and clauses",
+			input: map[string]interface{}{
+				DESCRIPTION: "test description with clauses",
+				WEIGHT:      0,
+				BUCKET_BY:   "",
+				CLAUSES: []interface{}{
+					map[string]interface{}{
+						ATTRIBUTE:  "country",
+						OP:         "in",
+						NEGATE:     false,
+						VALUES:     []interface{}{"us", "gb"},
+						VALUE_TYPE: "string",
+					},
+				},
+			},
+			expected: ldapi.UserSegmentRule{
+				Description: strPtr("test description with clauses"),
 				Clauses: []ldapi.Clause{
 					{
 						Attribute: "country",

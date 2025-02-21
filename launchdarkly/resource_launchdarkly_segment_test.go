@@ -100,6 +100,7 @@ resource "launchdarkly_segment" "test" {
 	included    = ["user1", "user2"]
 	excluded    = ["user3", "user4"]
 	rules {
+		description = "rule description"
 		clauses {
 			attribute = "test_att"
 			op        = "endsWith"
