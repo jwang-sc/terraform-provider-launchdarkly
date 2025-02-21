@@ -32,6 +32,7 @@ resource "launchdarkly_segment" "example" {
   }
 
   rules {
+    description = "Target users from English or German speaking countries"
     clauses {
       attribute    = "country"
       op           = "startsWith"
@@ -244,6 +245,7 @@ Required:
 
 Optional:
 
+- `description` (String) A human-readable description of the segment rule.
 - `bucket_by` (String) The attribute by which to group contexts together.
 - `clauses` (Block List) List of nested blocks specifying the logical clauses to evaluate (see [below for nested schema](#nestedblock--rules--clauses))
 - `rollout_context_kind` (String) The context kind associated with this segment rule. This argument is only valid if `weight` is also specified. If omitted, defaults to `user`.
