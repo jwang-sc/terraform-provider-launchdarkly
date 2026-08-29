@@ -40,6 +40,7 @@ resource "launchdarkly_segment" "test" {
 	included    = ["user1", "user2", "user3", "user4"]
 	excluded    = []
 	rules = [{
+		description = "high-value rollout bucket"
 		clauses = [{
 			attribute = "test_att"
 			op = "in"
@@ -250,6 +251,7 @@ func TestAccSegment_CreateAndUpdate(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "included.3", "user4"),
 					resource.TestCheckResourceAttr(resourceName, "excluded.#", "0"),
 					resource.TestCheckResourceAttr(resourceName, "rules.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "rules.0.description", "high-value rollout bucket"),
 					resource.TestCheckResourceAttr(resourceName, "rules.0.weight", "50000"),
 					resource.TestCheckResourceAttr(resourceName, "rules.0.bucket_by", "bucket"),
 					resource.TestCheckResourceAttr(resourceName, "rules.0.rollout_context_kind", "other"),
@@ -298,6 +300,7 @@ func TestAccSegment_CreateAndUpdate(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "excluded_contexts.0.values.0", "bad_account"),
 					resource.TestCheckResourceAttr(resourceName, "excluded_contexts.0.context_kind", "account"),
 					resource.TestCheckResourceAttr(resourceName, "rules.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "rules.0.description", ""),
 					resource.TestCheckResourceAttr(resourceName, "rules.0.weight", "50000"),
 					resource.TestCheckResourceAttr(resourceName, "rules.0.bucket_by", "bucket"),
 					resource.TestCheckResourceAttr(resourceName, "rules.0.rollout_context_kind", "user"), // should default when missing

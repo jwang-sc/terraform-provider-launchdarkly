@@ -284,6 +284,7 @@ Required:
 Optional:
 
 - `bucket_by` (String) The attribute by which to group contexts together.
+- `description` (String) A human-readable description of the segment rule.
 - `rollout_context_kind` (String) The context kind associated with this segment rule. This argument is only valid if `weight` is also specified. If omitted, defaults to `user`.
 - `weight` (Number) The integer weight of the rule (between 1 and 100000).
 

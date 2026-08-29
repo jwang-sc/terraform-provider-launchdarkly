@@ -74,6 +74,7 @@ Read-Only:
 
 - `bucket_by` (String) Attribute for bucketing contexts.
 - `clauses` (Attributes List) Clauses applied as the rule's logical condition. (see [below for nested schema](#nestedatt--rules--clauses))
+- `description` (String) A human-readable description of the segment rule.
 - `rollout_context_kind` (String) Context kind for the rollout.
 - `weight` (Number) Rule weight (1-100000).
 

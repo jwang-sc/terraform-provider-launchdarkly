@@ -775,7 +775,14 @@ func segmentResourceRulesValue(ctx context.Context, rules []ldapi.UserSegmentRul
 		if rckValue.IsNull() {
 			rckValue = types.StringValue("user")
 		}
+		// Schema declares Optional+Computed so plan and post-apply state
+		// stay aligned even when the user omits description.
+		description := types.StringValue("")
+		if r.Description != nil {
+			description = types.StringValue(*r.Description)
+		}
 		obj, d := types.ObjectValue(segmentRuleAttrTypes, map[string]attr.Value{
+			DESCRIPTION:          description,
 			CLAUSES:              clauses,
 			WEIGHT:               weight,
 			BUCKET_BY:            stringValueOrNullFromPointer(r.BucketBy),
@@ -800,6 +807,11 @@ func segmentRulesResourceAttribute() schema.ListNestedAttribute {
 		Description: "List of custom rules to apply to the segment. This attribute is not valid when `unbounded` is set to `true`.",
 		NestedObject: schema.NestedAttributeObject{
 			Attributes: map[string]schema.Attribute{
+				DESCRIPTION: schema.StringAttribute{
+					Optional:    true,
+					Computed:    true,
+					Description: "A human-readable description of the segment rule.",
+				},
 				WEIGHT: schema.Int64Attribute{
 					Optional:    true,
 					Description: "The integer weight of the rule (between 1 and 100000).",
@@ -858,6 +870,7 @@ func segmentRulesFromList(ctx context.Context, list types.List) ([]ldapi.UserSeg
 		return []ldapi.UserSegmentRule{}, diags
 	}
 	type ruleModel struct {
+		Description        types.String `tfsdk:"description"`
 		Clauses            types.List   `tfsdk:"clauses"`
 		Weight             types.Int64  `tfsdk:"weight"`
 		BucketBy           types.String `tfsdk:"bucket_by"`
@@ -874,6 +887,7 @@ func segmentRulesFromList(ctx context.Context, list types.List) ([]ldapi.UserSeg
 		clauses, d := frameworkClausesFromList(ctx, m.Clauses)
 		diags.Append(d...)
 		r := ldapi.NewUserSegmentRule(clauses)
+		r.SetDescription(m.Description.ValueString())
 		bucketBy := m.BucketBy.ValueString()
 		if bucketBy != "" {
 			r.SetBucketBy(bucketBy)

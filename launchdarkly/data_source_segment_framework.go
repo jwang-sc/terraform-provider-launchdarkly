@@ -43,6 +43,7 @@ var segmentTargetAttrTypes = map[string]attr.Type{
 }
 
 var segmentRuleAttrTypes = map[string]attr.Type{
+	DESCRIPTION:          types.StringType,
 	CLAUSES:              types.ListType{ElemType: types.ObjectType{AttrTypes: frameworkClauseAttrTypes}},
 	WEIGHT:               types.Int64Type,
 	BUCKET_BY:            types.StringType,
@@ -122,6 +123,7 @@ func (d *SegmentDataSource) Schema(_ context.Context, _ datasource.SchemaRequest
 				Description: "Custom rules applied to the segment.",
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
+						DESCRIPTION:          schema.StringAttribute{Computed: true, Description: "A human-readable description of the segment rule."},
 						WEIGHT:               schema.Int64Attribute{Computed: true, Description: "Rule weight (1-100000)."},
 						BUCKET_BY:            schema.StringAttribute{Computed: true, Description: "Attribute for bucketing contexts."},
 						ROLLOUT_CONTEXT_KIND: schema.StringAttribute{Computed: true, Description: "Context kind for the rollout."},
@@ -274,7 +276,12 @@ func segmentRulesToFrameworkList(ctx context.Context, rules []ldapi.UserSegmentR
 		if r.RolloutContextKind != nil {
 			rolloutContextKind = *r.RolloutContextKind
 		}
+		description := ""
+		if r.Description != nil {
+			description = *r.Description
+		}
 		obj, _ := types.ObjectValue(segmentRuleAttrTypes, map[string]attr.Value{
+			DESCRIPTION:          types.StringValue(description),
 			CLAUSES:              clauses,
 			WEIGHT:               types.Int64Value(weight),
 			BUCKET_BY:            types.StringValue(bucketBy),

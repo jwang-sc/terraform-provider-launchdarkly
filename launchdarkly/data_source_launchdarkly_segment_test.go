@@ -153,6 +153,7 @@ func TestAccDataSourceSegment_exists(t *testing.T) {
 				},
 				Weight:             &weight,
 				RolloutContextKind: &testContextKind,
+				Description:        ldapi.PtrString("names that start with 'a'"),
 			},
 		},
 	}
@@ -186,6 +187,7 @@ func TestAccDataSourceSegment_exists(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "rules.0.clauses.0.values.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "rules.0.weight", "30000"),
 					resource.TestCheckResourceAttr(resourceName, "rules.0.rollout_context_kind", "test-kind"),
+					resource.TestCheckResourceAttr(resourceName, "rules.0.description", "names that start with 'a'"),
 					resource.TestCheckResourceAttr(resourceName, "included.#", "2"),
 					resource.TestCheckResourceAttr(resourceName, "included.0", "some@email.com"),
 					resource.TestCheckResourceAttr(resourceName, "excluded.#", "1"),
