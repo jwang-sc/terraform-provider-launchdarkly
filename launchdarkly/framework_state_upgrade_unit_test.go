@@ -223,3 +223,36 @@ func TestFFEFallthroughObjectFromV0List(t *testing.T) {
 		t.Error("null list must project to null object")
 	}
 }
+
+func TestNullIfEmptyString(t *testing.T) {
+	if got := nullIfEmptyString(types.StringValue("")); !got.IsNull() {
+		t.Errorf("empty string should project to null, got %v", got)
+	}
+	if got := nullIfEmptyString(types.StringValue("user")); got.ValueString() != "user" {
+		t.Errorf("non-empty string should pass through unchanged, got %v", got)
+	}
+	if got := nullIfEmptyString(types.StringNull()); !got.IsNull() {
+		t.Errorf("null should pass through as null, got %v", got)
+	}
+	if got := nullIfEmptyString(types.StringUnknown()); !got.IsUnknown() {
+		t.Errorf("unknown should pass through as unknown, got %v", got)
+	}
+}
+
+func TestNullIfEmptySet(t *testing.T) {
+	ctx := context.Background()
+
+	empty := types.SetValueMust(types.StringType, []attr.Value{})
+	if got := nullIfEmptySet(ctx, empty); !got.IsNull() {
+		t.Errorf("empty set should project to null, got %v", got)
+	}
+
+	nonEmpty := types.SetValueMust(types.StringType, []attr.Value{types.StringValue("view-1")})
+	if got := nullIfEmptySet(ctx, nonEmpty); got.IsNull() || len(got.Elements()) != 1 {
+		t.Errorf("non-empty set should pass through unchanged, got %v", got)
+	}
+
+	if got := nullIfEmptySet(ctx, types.SetNull(types.StringType)); !got.IsNull() {
+		t.Errorf("null should pass through as null, got %v", got)
+	}
+}

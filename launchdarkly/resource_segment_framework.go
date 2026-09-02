@@ -706,10 +706,17 @@ func (r *SegmentResource) readIntoModel(ctx context.Context, data *SegmentResour
 	} else {
 		data.Unbounded = types.BoolValue(false)
 	}
+	// Leave null (not "") when the API has no real value -- a standard,
+	// non-Big segment never has an unbounded_context_kind, and setting a
+	// concrete "" instead of null trips terraform-core's post-apply/
+	// post-import consistency check ("was null, but now cty.StringVal(\"\")")
+	// for the common case. Mirrors nullIfEmptyString's own rationale
+	// (framework_state_upgrade.go): the framework must return null for the
+	// "API has nothing here" case, not a zero value.
 	if segment.UnboundedContextKind != nil && *segment.UnboundedContextKind != "" {
 		data.UnboundedContextKind = types.StringValue(*segment.UnboundedContextKind)
 	} else {
-		data.UnboundedContextKind = types.StringValue("")
+		data.UnboundedContextKind = types.StringNull()
 	}
 
 	includedList, d := listFromStringSlicePreservingPlan(ctx, segment.Included, data.Included)
@@ -728,7 +735,7 @@ func (r *SegmentResource) readIntoModel(ctx context.Context, data *SegmentResour
 	if bcErr != nil {
 		log.Printf("[WARN] failed to create beta client for view lookup: %v", bcErr)
 		if data.ViewKeys.IsNull() || data.ViewKeys.IsUnknown() {
-			data.ViewKeys = types.SetValueMust(types.StringType, []attr.Value{})
+			data.ViewKeys = types.SetNull(types.StringType)
 		}
 		return
 	}
@@ -739,7 +746,7 @@ func (r *SegmentResource) readIntoModel(ctx context.Context, data *SegmentResour
 	})
 	if err != nil {
 		log.Printf("[WARN] failed to get environment %q in project %q: %v", envKey, projectKey, err)
-		data.ViewKeys = types.SetValueMust(types.StringType, []attr.Value{})
+		data.ViewKeys = types.SetNull(types.StringType)
 		return
 	}
 	viewKeys, vErr := getViewsContainingSegment(betaClient, projectKey, env.Id, key)
@@ -747,9 +754,13 @@ func (r *SegmentResource) readIntoModel(ctx context.Context, data *SegmentResour
 		log.Printf("[WARN] failed to get views for segment %q: %v", key, vErr)
 		viewKeys = []string{}
 	}
+	// nullIfEmptySet (framework_state_upgrade.go): a segment with zero real
+	// view associations -- the common case -- must read back as null, not a
+	// concrete empty set, or terraform-core's post-apply/post-import
+	// consistency check fails ("was null, but now cty.SetValEmpty(...)").
 	viewKeysSet, d := setFromStringSlice(ctx, viewKeys)
 	diags.Append(d...)
-	data.ViewKeys = viewKeysSet
+	data.ViewKeys = nullIfEmptySet(ctx, viewKeysSet)
 }
 
 // segmentResourceRulesValue is the resource-side analogue of
