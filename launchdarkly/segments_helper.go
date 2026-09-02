@@ -110,6 +110,36 @@ func segmentTargetsSchema() map[string]*schema.Schema {
 	}
 }
 
+// setUnboundedContextKindIfPresent sets UNBOUNDED_CONTEXT_KIND only when the
+// API returned a real value. UnboundedContextKind is *string (omitempty) on
+// the API model -- nil when the segment isn't a Big Segment. Passing a nil
+// *string straight to d.Set gets reflection-coerced to an empty string ""
+// rather than left null, which trips Terraform's post-apply/post-import
+// consistency check ("was null, but now cty.StringVal(\"\")"). Leaving the
+// attribute unset when there's no real value keeps it null instead.
+func setUnboundedContextKindIfPresent(d *schema.ResourceData, unboundedContextKind *string) error {
+	if unboundedContextKind == nil {
+		return nil
+	}
+	return d.Set(UNBOUNDED_CONTEXT_KIND, *unboundedContextKind)
+}
+
+// setViewKeysIfNonEmpty sets VIEW_KEYS only when there's at least one real
+// view association. Setting an explicit empty slice via d.Set on a TypeSet
+// produces a concrete empty-set cty value, not null -- on a fresh import
+// (prior state is null, no value ever tracked), that trips Terraform's
+// post-import consistency check ("was null, but now cty.SetValEmpty(...)").
+// Tradeoff: an existing resource whose views were ALL removed externally
+// (via the LD UI, not Terraform) won't show that specific drift on refresh
+// -- it keeps whatever view_keys was last read. Real content (non-empty view
+// sets, and every other field) is unaffected.
+func setViewKeysIfNonEmpty(d *schema.ResourceData, viewKeys []string) error {
+	if len(viewKeys) == 0 {
+		return nil
+	}
+	return d.Set(VIEW_KEYS, viewKeys)
+}
+
 func segmentRead(ctx context.Context, d *schema.ResourceData, raw interface{}, isDataSource bool) diag.Diagnostics {
 	var diags diag.Diagnostics
 	client := raw.(*Client)
@@ -154,8 +184,7 @@ func segmentRead(ctx context.Context, d *schema.ResourceData, raw interface{}, i
 		return diag.Errorf("failed to set unbounded on segment with key %q: %v", segmentKey, err)
 	}
 
-	err = d.Set(UNBOUNDED_CONTEXT_KIND, segment.UnboundedContextKind)
-	if err != nil {
+	if err := setUnboundedContextKindIfPresent(d, segment.UnboundedContextKind); err != nil {
 		return diag.Errorf("failed to set unboundedContextKind on segment with key %q: %v", segmentKey, err)
 	}
 
@@ -209,9 +238,7 @@ func segmentRead(ctx context.Context, d *schema.ResourceData, raw interface{}, i
 				// Log warning but don't fail the read for discovery data
 				log.Printf("[WARN] failed to get views for segment %q in project %q, environment %q: %v", segmentKey, projectKey, envKey, err)
 			} else {
-				// Set view_keys to the actual view associations
-				err = d.Set(VIEW_KEYS, viewKeys)
-				if err != nil {
+				if err := setViewKeysIfNonEmpty(d, viewKeys); err != nil {
 					return diag.Errorf("could not set view_keys on segment with key %q: %v", segmentKey, err)
 				}
 
